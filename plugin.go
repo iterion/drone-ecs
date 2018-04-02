@@ -18,6 +18,7 @@ type Plugin struct {
 	Region                  string
 	Family                  string
 	TaskRoleArn             string
+	ExecutionRoleArn        string
 	Service                 string
 	ContainerName           string
 	DockerImage             string
@@ -173,10 +174,14 @@ func (p *Plugin) Exec() error {
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&definition,
 		},
-		Family:      aws.String(p.Family),
-		Volumes:     []*ecs.Volume{},
-		TaskRoleArn: aws.String(p.TaskRoleArn),
-		NetworkMode: aws.String(p.NetworkMode),
+		Family:                  aws.String(p.Family),
+		Volumes:                 []*ecs.Volume{},
+		TaskRoleArn:             aws.String(p.TaskRoleArn),
+		Memory:                  aws.String(fmt.Sprintf("%d", p.Memory)),
+		Cpu:                     aws.String(fmt.Sprintf("%d", p.CPU)),
+		ExecutionRoleArn:        aws.String(p.ExecutionRoleArn),
+		RequiresCompatibilities: []*string{aws.String("FARGATE")},
+		NetworkMode:             aws.String(p.NetworkMode),
 	}
 	resp, err := svc.RegisterTaskDefinition(params)
 

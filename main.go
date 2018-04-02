@@ -42,6 +42,11 @@ func main() {
 			EnvVar: "PLUGIN_TASK_ROLE_ARN",
 		},
 		cli.StringFlag{
+			Name:   "execution-role-arn",
+			Usage:  "ECS execution IAM role",
+			EnvVar: "PLUGIN_EXECUTION_ROLE_ARN",
+		},
+		cli.StringFlag{
 			Name:   "service",
 			Usage:  "Service to act on",
 			EnvVar: "PLUGIN_SERVICE",
@@ -145,6 +150,7 @@ func run(c *cli.Context) error {
 		Region:                  c.String("region"),
 		Family:                  c.String("family"),
 		TaskRoleArn:             c.String("task-role-arn"),
+		ExecutionRoleArn:        c.String("execution-role-arn"),
 		Service:                 c.String("service"),
 		ContainerName:           c.String("container-name"),
 		DockerImage:             c.String("docker-image"),
