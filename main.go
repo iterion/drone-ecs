@@ -170,5 +170,6 @@ func run(c *cli.Context) error {
 		DesiredCount:            c.Int64("desired-count"),
 		YamlVerified:            c.BoolT("yaml-verified"),
 	}
+	fmt.Println("Desired count is ", plugin.DesiredCount)
 	return plugin.Exec()
 }

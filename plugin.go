@@ -78,6 +78,39 @@ func (p *Plugin) Exec() error {
 		//WorkingDirectory: aws.String("String"),
 	}
 
+	datadogDefinition := ecs.ContainerDefinition{
+		Command: []*string{},
+
+		DnsSearchDomains:      []*string{},
+		DnsServers:            []*string{},
+		DockerLabels:          map[string]*string{},
+		DockerSecurityOptions: []*string{},
+		EntryPoint:            []*string{},
+		Environment: []*ecs.KeyValuePair{
+			&ecs.KeyValuePair{
+				Name:  aws.String("ECS_FARGATE"),
+				Value: aws.String("true"),
+			},
+		},
+		Essential:  aws.Bool(true),
+		ExtraHosts: []*ecs.HostEntry{},
+
+		Image:        aws.String("datadog/agent:latest"),
+		Links:        []*string{},
+		MountPoints:  []*ecs.MountPoint{},
+		Name:         aws.String("datadog-agent"),
+		PortMappings: []*ecs.PortMapping{},
+
+		Ulimits: []*ecs.Ulimit{},
+		//User: aws.String("String"),
+		VolumesFrom: []*ecs.VolumeFrom{},
+		//WorkingDirectory: aws.String("String"),
+
+		Cpu:               aws.Int64(256),
+		Memory:            aws.Int64(512),
+		MemoryReservation: aws.Int64(512),
+	}
+
 	if p.CPU != 0 {
 		definition.Cpu = aws.Int64(p.CPU)
 	}
@@ -125,6 +158,7 @@ func (p *Plugin) Exec() error {
 			Value: aws.String(strings.Trim(parts[1], " ")),
 		}
 		definition.Environment = append(definition.Environment, &pair)
+		datadogDefinition.Environment = append(datadogDefinition.Environment, &pair)
 	}
 
 	// Secret Environment variables
@@ -143,25 +177,31 @@ func (p *Plugin) Exec() error {
 			fmt.Println("invalid syntax in secret enironment var", envVar)
 		}
 		definition.Environment = append(definition.Environment, &pair)
+		datadogDefinition.Environment = append(datadogDefinition.Environment, &pair)
 	}
 
 	// DockerLabels
 	for _, label := range p.Labels {
 		parts := strings.SplitN(label, "=", 2)
 		definition.DockerLabels[strings.Trim(parts[0], " ")] = aws.String(strings.Trim(parts[1], " "))
+		datadogDefinition.DockerLabels[strings.Trim(parts[0], " ")] = aws.String(strings.Trim(parts[1], " "))
 	}
 
 	// LogOptions
 	if len(p.LogDriver) > 0 {
 		definition.LogConfiguration = new(ecs.LogConfiguration)
+		datadogDefinition.LogConfiguration = new(ecs.LogConfiguration)
 		definition.LogConfiguration.LogDriver = &p.LogDriver
+		datadogDefinition.LogConfiguration.LogDriver = &p.LogDriver
 		if len(p.LogOptions) > 0 {
 			definition.LogConfiguration.Options = make(map[string]*string)
+			datadogDefinition.LogConfiguration.Options = make(map[string]*string)
 			for _, logOption := range p.LogOptions {
 				parts := strings.SplitN(logOption, "=", 2)
 				logOptionKey := strings.Trim(parts[0], " ")
 				logOptionValue := aws.String(strings.Trim(parts[1], " "))
 				definition.LogConfiguration.Options[logOptionKey] = logOptionValue
+				datadogDefinition.LogConfiguration.Options[logOptionKey] = logOptionValue
 			}
 		}
 	}
@@ -173,12 +213,13 @@ func (p *Plugin) Exec() error {
 	params := &ecs.RegisterTaskDefinitionInput{
 		ContainerDefinitions: []*ecs.ContainerDefinition{
 			&definition,
+			&datadogDefinition,
 		},
 		Family:                  aws.String(p.Family),
 		Volumes:                 []*ecs.Volume{},
 		TaskRoleArn:             aws.String(p.TaskRoleArn),
-		Memory:                  aws.String(fmt.Sprintf("%d", p.Memory)),
-		Cpu:                     aws.String(fmt.Sprintf("%d", p.CPU)),
+		Memory:                  aws.String(fmt.Sprintf("%d", p.Memory+512)),
+		Cpu:                     aws.String(fmt.Sprintf("%d", p.CPU+256)),
 		ExecutionRoleArn:        aws.String(p.ExecutionRoleArn),
 		RequiresCompatibilities: []*string{aws.String("FARGATE")},
 		NetworkMode:             aws.String(p.NetworkMode),
